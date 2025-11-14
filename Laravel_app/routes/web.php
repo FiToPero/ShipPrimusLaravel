@@ -8,9 +8,10 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/get-token', [UserController::class, 'getToken']);
-Route::get('/refresh-token', [UserController::class, 'refreshToken']);
+Route::post('/get-token', [UserController::class, 'getToken']);
 
-Route::get('/get-rates', [RateController::class, 'getRates']);
+Route::post('/refresh-token', [UserController::class, 'refreshToken']);
 
-Route::get('/get-rates-minimum', [RateController::class, 'getRatesMinimum']);
+Route::post('/get-rates', [RateController::class, 'getRates']);
+
+Route::post('/get-rates-minimum', [RateController::class, 'getRatesMinimum']);

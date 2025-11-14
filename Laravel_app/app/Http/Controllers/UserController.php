@@ -3,80 +3,33 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Http\Requests\UserRequest;
 use Illuminate\Support\Facades\Http;
 use App\Models\Token;
+use App\Actions\CreateTokenAction;
+use App\Actions\RefreshTokenAction;
 
 class UserController extends Controller
 {
-    public function getToken()
+    public function getToken(UserRequest $request)
     {
-        $body = [
-            'username' => 'testDemo',
-            'password' => '1234',
-        ];
+        $body = $request->validated();
+    
 
         $response = Http::post('https://sandbox-api.shipprimus.com/api/v1/login', $body);
 
         $token = $response->json('data.accessToken');
         
-        $tokenData = $this->decodeJWT($token);
+        $tokenData = decodeJWT($token);
 
-        Token::create([
-            'username' => $body['username'],
-            'password' => $body['password'],
-            'access_token' => $token,
-            'issued_at' => $tokenData['issued_at'],
-            'expiration' => $tokenData['expiration'],
-        ]);
+        if(validateToken($tokenData['expiration'])) {
+            CreateTokenAction::run($body, $token, $tokenData);
+        } else {
+            RefreshTokenAction::run($token, $body);
+        }
+
 
         return response()->json($tokenData);
-    }
-
-    public function refreshToken($oldToken)
-    {
-        $body = [
-            'token' => $oldToken,
-        ];
-        $response = Http::post('https://sandbox-api.shipprimus.com/api/v1/refreshtoken', $body);
-
-        return response()->json($response->json());
-    }
-    
-    
-    public function decodeJWT(string $token): array
-    {
-        $parts = explode('.', $token);
-        
-        if (count($parts) !== 3) {
-            return ['error' => 'Invalid JWT format'];
-        }
-          
-        // payload
-        $payload = json_decode(base64_decode($parts[1]), true);
-        
-        $issuedAt = $payload['iat'] ?? null;
-        $jti = $payload['jti'] ?? null;
-        $issuer = $payload['iss'] ?? null;
-        $expiration = $payload['exp'] ?? null;
-        $legacy = $payload['legacy'] ?? null;
-
-        $expirationValid = $this->validateToken($expiration);
-        
-        return [
-            'issued_at' => $issuedAt,
-            'jti' => $jti,
-            'issuer' => $issuer,
-            'expiration' => $expiration,
-            'legacy' => $legacy,
-            'expiration_valid' => $expirationValid,
-        ];
-    }
-
-    public function validateToken(int $expiration): bool
-    {
-        $currentTime = time();
-        $resp = $expiration > $currentTime;
-        return $resp;
     }
 
 
