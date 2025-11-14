@@ -22,14 +22,26 @@ class UserController extends Controller
         $tokenData = $this->decodeJWT($token);
 
         Token::create([
+            'username' => $body['username'],
+            'password' => $body['password'],
             'access_token' => $token,
             'issued_at' => $tokenData['issued_at'],
             'expiration' => $tokenData['expiration'],
-            'is_valid' => $tokenData['expiration_valid'],
         ]);
 
         return response()->json($tokenData);
     }
+
+    public function refreshToken($oldToken)
+    {
+        $body = [
+            'token' => $oldToken,
+        ];
+        $response = Http::post('https://sandbox-api.shipprimus.com/api/v1/refreshtoken', $body);
+
+        return response()->json($response->json());
+    }
+    
     
     public function decodeJWT(string $token): array
     {

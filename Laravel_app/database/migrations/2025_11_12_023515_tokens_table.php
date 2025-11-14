@@ -13,10 +13,11 @@ return new class extends Migration
     {
         Schema::create('tokens', function (Blueprint $table) {
             $table->id();
+            $table->string('username');
+            $table->string('password');
             $table->text('access_token');
             $table->integer('issued_at');
             $table->integer('expiration');
-            $table->boolean('is_valid')->default(true);
             $table->timestamps();
         });
     }
